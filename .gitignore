@@ -3,6 +3,7 @@ node_modules/
 backend/__pycache__/
 backend/src/__pycache__/
 backend/src/**/*.pyc
+frontend/node_modules/
 
 # Environment variables
 .env
@@ -62,3 +63,18 @@ yarn-error.log*
 
 # System files
 nul
+
+# Backend build artifacts
+backend-agentic/.pytest_cache/
+backend-agentic/__pycache__/
+backend-agentic/*.pyc
+
+# Frontend build artifacts
+frontend/dist/
+frontend/.vite/
+frontend/.next/
+frontend/build/
+
+# Lock files
+package-lock.json
+yarn.lock
