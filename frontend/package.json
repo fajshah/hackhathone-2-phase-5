@@ -4,15 +4,16 @@
   "private": true,
   "description": "Frontend for the Todo AI Chatbot application",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "npx vite build",
-    "preview": "npx vite preview",
-    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "type-check": "tsc --noEmit"
-  },
+"scripts": {
+  "dev": "vite",
+  "build": "npx vite build",
+  "preview": "npx vite preview",
+  "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+  "type-check": "tsc --noEmit"
+},
+
   "engines": {
-    "node": "18.x"
+    "node": "24.x"
   },
   "dependencies": {
     "axios": "^1.6.0",
