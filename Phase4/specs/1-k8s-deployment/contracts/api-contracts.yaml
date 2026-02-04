@@ -1,0 +1,191 @@
+# API Contracts: Todo Chatbot Kubernetes Deployment
+
+## Overview
+This document defines the API contracts and interfaces for the Kubernetes-deployed Todo Chatbot application. These contracts remain consistent with the existing Docker Compose deployment to ensure compatibility.
+
+## Helm Chart Interface
+
+### Chart Configuration (values.yaml)
+```yaml
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Frontend configuration
+frontend:
+  replicaCount: 1
+  image:
+    repository: todo-frontend
+    pullPolicy: IfNotPresent
+    tag: ""
+  service:
+    type: NodePort
+    port: 80
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Backend configuration
+backend:
+  replicaCount: 1
+  image:
+    repository: todo-backend
+    pullPolicy: IfNotPresent
+    tag: ""
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      cpu: 150m
+      memory: 256Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Database configuration
+database:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "13"
+  service:
+    port: 5432
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: ""
+```
+
+## Kubernetes API Endpoints
+
+### Helm Installation Interface
+- **Command**: `helm install todo-chatbot ./charts/todo-chatbot --namespace todo-app --create-namespace`
+- **Parameters**:
+  - `--set frontend.replicaCount=2` (scale frontend)
+  - `--set backend.resources.limits.memory=1Gi` (increase memory)
+  - `--values custom-values.yaml` (custom configuration)
+
+### Upgrade Interface
+- **Command**: `helm upgrade todo-chatbot ./charts/todo-chatbot --namespace todo-app`
+- **Parameters**: Same as installation
+
+### Rollback Interface
+- **Command**: `helm rollback todo-chatbot --namespace todo-app`
+- **Parameters**: None required (uses previous release)
+
+## Application API Endpoints
+
+### Frontend Service Interface
+- **Endpoint**: `http://<node-ip>:<nodeport>/`
+- **Method**: GET
+- **Response**: React application HTML
+- **Health Check**: `/health`
+
+### Backend Service Interface
+- **Endpoint**: `http://todo-backend-service:8000/api/chat`
+- **Method**: POST
+- **Request Body**:
+  ```json
+  {
+    "message": "string",
+    "user_id": "string"
+  }
+  ```
+- **Response**:
+  ```json
+  {
+    "response": "string",
+    "conversation_id": "string"
+  }
+  ```
+
+### Database Service Interface
+- **Endpoint**: `postgresql://todo-postgres-service:5432/todo_db`
+- **Protocol**: PostgreSQL wire protocol
+- **Connection Parameters**:
+  - Username: postgres
+  - Database: todo_db
+  - Port: 5432
+
+## Internal Service Communication
+
+### Backend → Database
+- **Service**: `todo-postgres-service:5432`
+- **Protocol**: PostgreSQL
+- **Environment Variables**:
+  - `DATABASE_URL`: postgresql://postgres:$(POSTGRES_PASSWORD)@todo-postgres-service:5432/todo_db
+
+### Frontend → Backend
+- **Service**: `http://todo-backend-service:8000`
+- **Protocol**: HTTP
+- **Environment Variables**:
+  - `BACKEND_URL`: http://todo-backend-service:8000
+
+## Kubernetes Resource APIs
+
+### Deployment Management
+- **GET /apis/apps/v1/namespaces/{namespace}/deployments**: List deployments
+- **POST /apis/apps/v1/namespaces/{namespace}/deployments**: Create deployment
+- **PUT /apis/apps/v1/namespaces/{namespace}/deployments/{name}**: Update deployment
+- **DELETE /apis/apps/v1/namespaces/{namespace}/deployments/{name}**: Delete deployment
+
+### Service Management
+- **GET /api/v1/namespaces/{namespace}/services**: List services
+- **POST /api/v1/namespaces/{namespace}/services**: Create service
+- **PUT /api/v1/namespaces/{namespace}/services/{name}**: Update service
+- **DELETE /api/v1/namespaces/{namespace}/services/{name}**: Delete service
+
+### Secret Management
+- **GET /api/v1/namespaces/{namespace}/secrets**: List secrets
+- **POST /api/v1/namespaces/{namespace}/secrets**: Create secret
+- **PUT /api/v1/namespaces/{namespace}/secrets/{name}**: Update secret
+- **DELETE /api/v1/namespaces/{namespace}/secrets/{name}**: Delete secret
+
+## AI-Assisted Operation Contracts
+
+### kubectl-ai Commands
+- **Interface**: Natural language commands through kubectl-ai plugin
+- **Format**: `kubectl-ai "describe pods with high cpu usage"`
+- **Response**: Structured kubectl command or diagnostic information
+
+### Kagent Operations
+- **Interface**: Advanced cluster analysis through Kagent
+- **Format**: `kagent "analyze cluster health"`
+- **Response**: Detailed analysis report with recommendations
+
+## Error Handling Contracts
+
+### HTTP Error Codes
+- **400**: Bad Request - Invalid request format
+- **401**: Unauthorized - Authentication required
+- **404**: Not Found - Resource not available
+- **500**: Internal Server Error - System error
+- **503**: Service Unavailable - Temporary unavailability
+
+### Kubernetes Event Codes
+- **FailedCreate**: Resource creation failed
+- **SuccessfulCreate**: Resource created successfully
+- **BackOff**: Pod start failed, retrying
+- **Started**: Container started successfully
+- **Pulling**: Pulling image
+- **Pulled**: Image pulled successfully

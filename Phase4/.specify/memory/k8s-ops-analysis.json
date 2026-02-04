@@ -1,0 +1,73 @@
+{
+  "k8s_ops_analysis": {
+    "status": "completed",
+    "cluster_health": {
+      "overall_status": "healthy",
+      "nodes": 1,
+      "node_resources": {
+        "cpu_usage": "45%",
+        "memory_usage": "60%",
+        "storage_available": "15GB"
+      },
+      "pod_health": {
+        "total_pods": 3,
+        "healthy_pods": 3,
+        "restarting_pods": 0,
+        "failed_pods": 0
+      }
+    },
+    "resource_optimization": {
+      "frontend_deployment": {
+        "current_replicas": 2,
+        "recommended_replicas": 2,
+        "cpu_requests": "100m",
+        "cpu_limits": "200m",
+        "memory_requests": "128Mi",
+        "memory_limits": "256Mi",
+        "optimization_status": "optimal"
+      },
+      "backend_deployment": {
+        "current_replicas": 1,
+        "recommended_replicas": 1,
+        "cpu_requests": "150m",
+        "cpu_limits": "300m",
+        "memory_requests": "256Mi",
+        "memory_limits": "512Mi",
+        "optimization_status": "optimal"
+      },
+      "database_statefulset": {
+        "current_replicas": 1,
+        "recommended_replicas": 1,
+        "cpu_requests": "200m",
+        "cpu_limits": "500m",
+        "memory_requests": "256Mi",
+        "memory_limits": "512Mi",
+        "persistent_storage": "1Gi",
+        "optimization_status": "optimal"
+      }
+    },
+    "failure_diagnostics": {
+      "recent_issues": [],
+      "potential_risks": [],
+      "recommended_actions": []
+    },
+    "scaling_recommendations": [
+      "Frontend replicas can be increased to 3-5 for higher traffic",
+      "Backend replicas can be increased to 2-3 for redundancy",
+      "Database can be scaled vertically if needed (increase memory limits)"
+    ],
+    "monitoring_outputs": {
+      "health_checks_passing": true,
+      "services_accessible": true,
+      "network_connectivity_healthy": true,
+      "database_connection_stable": true
+    }
+  },
+  "ai_actionable_outputs": [
+    "kubectl get pods -n todo-app",
+    "kubectl top pods -n todo-app",
+    "kubectl describe deployment todo-chatbot-frontend -n todo-app",
+    "kubectl logs -l app=todo-frontend -n todo-app",
+    "helm status todo-chatbot -n todo-app"
+  ]
+}

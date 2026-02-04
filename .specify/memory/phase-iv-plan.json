@@ -1,0 +1,330 @@
+{
+  "plan_steps": [
+    {
+      "step_number": 1,
+      "description": "Validate prerequisites and verify required tools are installed",
+      "responsible_agent": "Planning Agent",
+      "inputs_required": [
+        "Phase IV Agent Constitution",
+        "Phase IV Specification JSON",
+        "Local environment with Docker Desktop, Minikube, Helm, kubectl"
+      ],
+      "expected_outputs": [
+        "Environment validation report",
+        "Tool availability verification",
+        "Prerequisites check completed"
+      ],
+      "dependencies": [],
+      "notes": "Ensure Docker Desktop with AI features enabled, Minikube v1.20+, Helm 3.x, kubectl-ai, kagent are installed"
+    },
+    {
+      "step_number": 2,
+      "description": "Initialize Minikube cluster with appropriate resources",
+      "responsible_agent": "Planning Agent",
+      "inputs_required": [
+        "Environment validation report",
+        "Phase IV specification resource requirements"
+      ],
+      "expected_outputs": [
+        "Minikube cluster running with 4 CPUs and 8GB RAM",
+        "Kubectl context pointing to Minikube",
+        "Metrics server and ingress addons enabled"
+      ],
+      "dependencies": [1],
+      "notes": "Start Minikube with --cpus=4 --memory=8192 --disk-size=20g for adequate resources"
+    },
+    {
+      "step_number": 3,
+      "description": "Prepare namespace and basic Kubernetes infrastructure",
+      "responsible_agent": "Planning Agent",
+      "inputs_required": [
+        "Running Minikube cluster",
+        "Kubectl access"
+      ],
+      "expected_outputs": [
+        "todo-app namespace created",
+        "Basic RBAC setup if needed",
+        "Infrastructure validation completed"
+      ],
+      "dependencies": [2],
+      "notes": "Create dedicated namespace for the Todo Chatbot application"
+    },
+    {
+      "step_number": 4,
+      "description": "Analyze existing Phase III codebase and prepare for containerization",
+      "responsible_agent": "Docker AI Agent (Gordon)",
+      "inputs_required": [
+        "Phase III frontend and backend source code",
+        "Phase IV specification requirements"
+      ],
+      "expected_outputs": [
+        "Analysis of existing Docker configurations",
+        "Optimization recommendations for containerization",
+        "Prepared build context for both applications"
+      ],
+      "dependencies": [],
+      "notes": "Use Docker AI Agent to analyze current Dockerfiles and suggest improvements before building"
+    },
+    {
+      "step_number": 5,
+      "description": "Build optimized frontend container image using Docker AI Agent",
+      "responsible_agent": "Docker AI Agent (Gordon)",
+      "inputs_required": [
+        "Frontend source code from Phase III",
+        "Analysis results from previous step"
+      ],
+      "expected_outputs": [
+        "Optimized todo-frontend:latest image",
+        "Multi-stage build optimization",
+        "Size-optimized container image"
+      ],
+      "dependencies": [4],
+      "notes": "Use multi-stage build with nginx for production, ensure proper health checks and security"
+    },
+    {
+      "step_number": 6,
+      "description": "Build optimized backend container image using Docker AI Agent",
+      "responsible_agent": "Docker AI Agent (Gordon)",
+      "inputs_required": [
+        "Backend source code from Phase III",
+        "Analysis results from step 4"
+      ],
+      "expected_outputs": [
+        "Optimized todo-backend:latest image",
+        "Production-ready FastAPI container",
+        "Security and performance optimized"
+      ],
+      "dependencies": [4],
+      "notes": "Use Gunicorn with Uvicorn workers for production FastAPI deployment, ensure proper security context"
+    },
+    {
+      "step_number": 7,
+      "description": "Load container images into Minikube registry",
+      "responsible_agent": "Docker AI Agent (Gordon)",
+      "inputs_required": [
+        "Built todo-frontend:latest image",
+        "Built todo-backend:latest image",
+        "Running Minikube cluster"
+      ],
+      "expected_outputs": [
+        "Images available in Minikube Docker daemon",
+        "Image verification completed",
+        "Ready for Kubernetes deployment"
+      ],
+      "dependencies": [5, 6],
+      "notes": "Use eval $(minikube docker-env) to point Docker to Minikube's registry"
+    },
+    {
+      "step_number": 8,
+      "description": "Generate Helm chart structure and templates using kubectl-ai",
+      "responsible_agent": "Helm Generation Agent (kubectl-ai)",
+      "inputs_required": [
+        "Phase IV specification with component details",
+        "Container images from Docker AI Agent"
+      ],
+      "expected_outputs": [
+        "Complete Helm chart directory structure",
+        "Kubernetes resource templates for deployments and services",
+        "Parameterized values.yaml file"
+      ],
+      "dependencies": [7],
+      "notes": "Create templates for frontend/backend deployments, services, ConfigMaps, Secrets, and StatefulSet for database"
+    },
+    {
+      "step_number": 9,
+      "description": "Create database StatefulSet and service templates",
+      "responsible_agent": "Helm Generation Agent (kubectl-ai)",
+      "inputs_required": [
+        "Helm chart structure from previous step",
+        "Database requirements from specification"
+      ],
+      "expected_outputs": [
+        "Database StatefulSet template with persistent storage",
+        "Database service template",
+        "Proper volume claim templates"
+      ],
+      "dependencies": [8],
+      "notes": "Ensure PostgreSQL is configured with persistent storage and proper headless service"
+    },
+    {
+      "step_number": 10,
+      "description": "Configure application ConfigMaps and Secrets templates",
+      "responsible_agent": "Helm Generation Agent (kubectl-ai)",
+      "inputs_required": [
+        "Helm chart structure",
+        "Application configuration requirements"
+      ],
+      "expected_outputs": [
+        "ConfigMap template for application configuration",
+        "Secret template for sensitive data (API keys)",
+        "Proper environment variable mappings"
+      ],
+      "dependencies": [8],
+      "notes": "Ensure secrets are properly encoded and referenced in deployments"
+    },
+    {
+      "step_number": 11,
+      "description": "Finalize Helm chart with proper resource definitions",
+      "responsible_agent": "Helm Generation Agent (kubectl-ai)",
+      "inputs_required": [
+        "All previous templates",
+        "Resource requirement specifications"
+      ],
+      "expected_outputs": [
+        "Complete Chart.yaml with metadata",
+        "Finalized values.yaml with proper defaults",
+        "Helper templates for naming and labeling"
+      ],
+      "dependencies": [8, 9, 10],
+      "notes": "Include proper labels, annotations, and resource requests/limits in all templates"
+    },
+    {
+      "step_number": 12,
+      "description": "Analyze cluster state and resource requirements using kagent",
+      "responsible_agent": "Kubernetes Ops Agent (kagent)",
+      "inputs_required": [
+        "Running Minikube cluster",
+        "Helm chart ready for deployment"
+      ],
+      "expected_outputs": [
+        "Cluster resource availability analysis",
+        "Recommendations for resource allocation",
+        "Potential conflict identification"
+      ],
+      "dependencies": [11],
+      "notes": "Check available CPU, memory, and storage in the cluster before deployment"
+    },
+    {
+      "step_number": 13,
+      "description": "Perform pre-deployment validation and optimization",
+      "responsible_agent": "Kubernetes Ops Agent (kagent)",
+      "inputs_required": [
+        "Helm chart",
+        "Cluster analysis report",
+        "Resource allocation recommendations"
+      ],
+      "expected_outputs": [
+        "Validation report for Helm chart",
+        "Optimization suggestions for deployments",
+        "Readiness assessment for deployment"
+      ],
+      "dependencies": [11, 12],
+      "notes": "Use kubectl-ai and kagent to validate the Helm chart before installation"
+    },
+    {
+      "step_number": 14,
+      "description": "Deploy the Todo Chatbot application using Helm",
+      "responsible_agent": "Deployment & Validation Agent",
+      "inputs_required": [
+        "Validated Helm chart",
+        "Prepared namespace",
+        "Loaded container images"
+      ],
+      "expected_outputs": [
+        "Helm release installed successfully",
+        "All Kubernetes resources created",
+        "Initial deployment state"
+      ],
+      "dependencies": [3, 7, 11, 13],
+      "notes": "Install the Helm chart with proper values for Minikube environment"
+    },
+    {
+      "step_number": 15,
+      "description": "Monitor initial deployment and pod creation",
+      "responsible_agent": "Deployment & Validation Agent",
+      "inputs_required": [
+        "Helm release deployed",
+        "Kubectl access"
+      ],
+      "expected_outputs": [
+        "Confirmation of pod creation",
+        "Tracking initial pod states",
+        "Identification of any immediate issues"
+      ],
+      "dependencies": [14],
+      "notes": "Watch for pods transitioning from Pending to Running state"
+    },
+    {
+      "step_number": 16,
+      "description": "Validate pod readiness and health checks",
+      "responsible_agent": "Deployment & Validation Agent",
+      "inputs_required": [
+        "Created pods",
+        "Application health check endpoints"
+      ],
+      "expected_outputs": [
+        "All pods in Ready state",
+        "Health checks passing",
+        "Liveness and readiness probes working"
+      ],
+      "dependencies": [15],
+      "notes": "Ensure all deployments have the expected number of ready replicas"
+    },
+    {
+      "step_number": 17,
+      "description": "Verify service connectivity and accessibility",
+      "responsible_agent": "Deployment & Validation Agent",
+      "inputs_required": [
+        "Ready pods",
+        "Kubernetes services created"
+      ],
+      "expected_outputs": [
+        "Services accessible within cluster",
+        "Backend API endpoints responsive",
+        "Database connectivity confirmed"
+      ],
+      "dependencies": [16],
+      "notes": "Test internal service communication between components"
+    },
+    {
+      "step_number": 18,
+      "description": "Test external service exposure and access",
+      "responsible_agent": "Deployment & Validation Agent",
+      "inputs_required": [
+        "Internal services working",
+        "Minikube cluster access"
+      ],
+      "expected_outputs": [
+        "Frontend accessible via NodePort or minikube service",
+        "External endpoint verification",
+        "Cross-origin communication working"
+      ],
+      "dependencies": [17],
+      "notes": "Use minikube service commands or NodePort to access the frontend"
+    },
+    {
+      "step_number": 19,
+      "description": "Execute application-level validation and functionality tests",
+      "responsible_agent": "Deployment & Validation Agent",
+      "inputs_required": [
+        "Externally accessible frontend",
+        "Working backend API",
+        "Test scenarios from Phase III"
+      ],
+      "expected_outputs": [
+        "Application functionality verified",
+        "End-to-end workflow testing completed",
+        "Integration test results"
+      ],
+      "dependencies": [18],
+      "notes": "Test core todo functionality through the UI and API"
+    },
+    {
+      "step_number": 20,
+      "description": "Final validation and deployment success confirmation",
+      "responsible_agent": "Deployment & Validation Agent",
+      "inputs_required": [
+        "All previous validation steps passed",
+        "Functionality tests completed"
+      ],
+      "expected_outputs": [
+        "Comprehensive validation report",
+        "Deployment success confirmation",
+        "Access URL for the application",
+        "Performance and health metrics"
+      ],
+      "dependencies": [19],
+      "notes": "Create final report documenting deployment success and access information"
+    }
+  ]
+}

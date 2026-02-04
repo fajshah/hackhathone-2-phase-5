@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "todo-chatbot.fullname" . }}-app-config
+  labels:
+    {{- include "todo-chatbot.labels" . | nindent 4 }}
+data:
+  FRONTEND_URL: {{ .Values.config.frontendUrl | quote }}
+  BACKEND_URL: {{ .Values.config.backendUrl | quote }}
+  DATABASE_HOST: {{ printf "%s-database" (include "todo-chatbot.fullname" .) | quote }}
+  DATABASE_PORT: {{ .Values.database.service.port | quote }}

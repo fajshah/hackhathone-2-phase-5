@@ -1,0 +1,87 @@
+{
+  "project_title": "Cloud-Native Todo Chatbot – Local Kubernetes Deployment",
+  "purpose": "Deploy the Todo Chatbot application on a local Kubernetes cluster using Minikube, Helm Charts, with AI-assisted operations using kubectl-ai and Kagent, following a spec-driven, no-manual-coding approach.",
+  "core_principles": [
+    "Spec-Driven First",
+    "No Manual Coding",
+    "Local-First",
+    "Reproducibility",
+    "Observability & Health",
+    "Safety & Least Privilege"
+  ],
+  "tooling_canon": [
+    "Docker Desktop",
+    "Gordon (Docker AI Agent)",
+    "Kubernetes (Minikube)",
+    "Helm Charts",
+    "kubectl-ai",
+    "kagent"
+  ],
+  "agents": [
+    {
+      "name": "Specification Agent",
+      "authority": "Define WHAT to deploy",
+      "inputs": "Phase III app requirements, existing Todo Chatbot codebase",
+      "outputs": "deployment-spec.yaml with components, ports, env vars, replicas, resources",
+      "rules": "No implementation details, focus on WHAT not HOW"
+    },
+    {
+      "name": "Planning Agent",
+      "authority": "Define HOW to execute deployment",
+      "inputs": "deployment-spec.yaml",
+      "outputs": "Ordered execution plan mapping steps to AI tools (Gordon, kubectl-ai, kagent)",
+      "rules": "Step-by-step plan suitable for AI execution"
+    },
+    {
+      "name": "Docker AI Agent (Gordon)",
+      "authority": "Container build lifecycle for frontend and backend",
+      "inputs": "Phase III frontend/backend code from existing repository",
+      "outputs": "Optimized Docker images for todo-frontend:latest and todo-backend:latest",
+      "rules": "Optimize size; tag for Minikube; no manual Dockerfiles creation"
+    },
+    {
+      "name": "Helm Generation Agent (kubectl-ai)",
+      "authority": "Generate Helm charts for Kubernetes deployment",
+      "inputs": "deployment-spec.yaml, container images from Docker AI Agent",
+      "outputs": "Complete Helm chart directory with templates, values.yaml, Chart.yaml",
+      "rules": "Parametrize images and replicas; use NodePort for frontend, ClusterIP for backend; follow Helm best practices"
+    },
+    {
+      "name": "Kubernetes Ops Agent (kagent)",
+      "authority": "Provide cluster intelligence and optimization",
+      "inputs": "Minikube cluster state, deployment status, performance metrics",
+      "outputs": "Health analysis reports, optimization recommendations, resource utilization insights",
+      "rules": "Analyze resources, debug pod issues, suggest performance improvements"
+    },
+    {
+      "name": "Deployment & Validation Agent",
+      "authority": "Execute deployment and verify system integrity",
+      "inputs": "Helm charts from Helm Generation Agent, Docker images from Docker AI Agent",
+      "outputs": "Successful release on Minikube, access URL, validation report confirming system health",
+      "rules": "Verify pods in Ready state, services accessible, frontend operational, application functionality validated"
+    }
+  ],
+  "workflow": [
+    "Specification → Planning → Docker AI Build → Helm Generation → Cluster Analysis → Deployment → Validation"
+  ],
+  "acceptance_criteria": [
+    "All pods in Ready state with 0 restarts",
+    "Frontend accessible via NodePort/Minikube tunnel",
+    "Backend API responsive at expected endpoints",
+    "Database connectivity established and functional",
+    "Helm install successful with no errors",
+    "Health checks passing for all deployments",
+    "Application functionality validated through API tests",
+    "AI-assisted operations (kubectl-ai, kagent) working correctly"
+  ],
+  "prohibitions": [
+    "Manual creation of Dockerfiles, YAML manifests, or Kubernetes resources",
+    "Direct cloud deployment (must use local Minikube only)",
+    "Hardcoded credentials or secrets in plain text",
+    "Deployment to production environments without proper review",
+    "Manual editing of generated Helm charts or Kubernetes manifests",
+    "Skipping AI-assisted tools in favor of manual operations"
+  ],
+  "audit_evidence": "All specifications, plans, task lists, execution commands, AI-generated files, and validation reports must be logged and preserved in the project history for auditability and reproducibility.",
+  "amendment_process": "Changes to this specification require Specification Agent revision and Planning Agent approval before taking effect, with proper version control and change tracking."
+}

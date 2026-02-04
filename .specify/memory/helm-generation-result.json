@@ -1,0 +1,79 @@
+{
+  "helm_generation_result": {
+    "status": "completed",
+    "chart_directory": "charts/todo-chatbot",
+    "generated_templates": [
+      {
+        "filename": "Chart.yaml",
+        "purpose": "Chart metadata and versioning"
+      },
+      {
+        "filename": "values.yaml",
+        "purpose": "Parameterized configuration values"
+      },
+      {
+        "filename": "templates/_helpers.tpl",
+        "purpose": "Template helper functions"
+      },
+      {
+        "filename": "templates/frontend-deployment.yaml",
+        "purpose": "Frontend application deployment"
+      },
+      {
+        "filename": "templates/backend-deployment.yaml",
+        "purpose": "Backend application deployment"
+      },
+      {
+        "filename": "templates/database-statefulset.yaml",
+        "purpose": "PostgreSQL database StatefulSet"
+      },
+      {
+        "filename": "templates/frontend-service.yaml",
+        "purpose": "Frontend service (NodePort)"
+      },
+      {
+        "filename": "templates/backend-service.yaml",
+        "purpose": "Backend service (ClusterIP)"
+      },
+      {
+        "filename": "templates/database-service.yaml",
+        "purpose": "Database service (ClusterIP)"
+      },
+      {
+        "filename": "templates/configmap.yaml",
+        "purpose": "Application configuration"
+      },
+      {
+        "filename": "templates/secrets.yaml",
+        "purpose": "Sensitive data management"
+      }
+    ],
+    "parameterized_values": {
+      "frontend_replicas": 2,
+      "backend_replicas": 1,
+      "database_enabled": true,
+      "frontend_service_type": "NodePort",
+      "backend_service_type": "ClusterIP",
+      "image_pull_policy": "IfNotPresent",
+      "resource_limits": {
+        "cpu": "200m",
+        "memory": "256Mi"
+      }
+    },
+    "compliance": {
+      "no_manual_yaml": true,
+      "specification_compliant": true,
+      "minikube_ready": true,
+      "parameterized_all_values": true
+    }
+  },
+  "installation_commands": [
+    "helm install todo-chatbot charts/todo-chatbot --namespace todo-app --create-namespace",
+    "helm upgrade todo-chatbot charts/todo-chatbot --namespace todo-app"
+  ],
+  "validation_commands": [
+    "helm lint charts/todo-chatbot",
+    "helm template todo-chatbot charts/todo-chatbot",
+    "kubectl get pods -n todo-app"
+  ]
+}
