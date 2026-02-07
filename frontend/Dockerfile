@@ -1,36 +1,32 @@
-# Use the official Node.js image as the base image for building
-FROM node:18-alpine AS builder
+# Stage 1: Build the React application
+FROM node:20-alpine as build
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the package.json and package-lock.json files to the container
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install dependencies, preferring offline mode but allowing online fallback
-RUN npm install --prefer-offline
+# Install dependencies
+RUN npm install
 
-# Copy the rest of the application files to the container
+# Copy the rest of the application code
 COPY . .
 
-# Build the React application for production
+# Build the application
 RUN npm run build
 
-# Remove dev dependencies after build to reduce image size
-RUN npm prune --production --prefer-offline
-
-# Use nginx-alpine for smaller footprint in the final image
+# Stage 2: Serve the application using nginx
 FROM nginx:alpine
 
-# Copy the built application from the builder stage to the nginx server
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Copy the build output from the previous stage
+COPY --from=build /app/build /usr/share/nginx/html
 
-# Copy custom nginx configuration to optimize for React SPA
-RUN rm -rf /etc/nginx/conf.d/default.conf
+# Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Expose port 80 to allow communication to/from the React application
-EXPOSE 80
+# Expose port
+EXPOSE 3000
 
-# Start the nginx server
+# Start the server
 CMD ["nginx", "-g", "daemon off;"]

@@ -41,7 +41,13 @@
     "typescript": "^5.2.2",
     "vite": "^4.5.0"
   },
-  "keywords": ["react", "typescript", "chatbot", "todo", "ai"],
+  "keywords": [
+    "react",
+    "typescript",
+    "chatbot",
+    "todo",
+    "ai"
+  ],
   "author": "Todo AI Chatbot Team",
   "license": "MIT"
 }

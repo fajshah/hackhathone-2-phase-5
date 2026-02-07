@@ -1,0 +1,27 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kafka-pubsub
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  - name: brokers
+    value: "localhost:9092"
+  - name: consumerGroup
+    value: "dapr-kafka-consumer-group"
+  - name: clientID
+    value: "todo-chatbot"
+  - name: authRequired
+    value: "false"
+  - name: saslUsername
+    value: ""
+  - name: saslPassword
+    value: ""
+  - name: maxMessageBytes
+    value: "1048576"
+  - name: consumeRetryInterval
+    value: "100ms"
+scopes:
+  - todo-chatbot-backend
+  - event-processor

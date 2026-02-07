@@ -1,160 +1,186 @@
 """
-Task service for the Todo AI Chatbot.
-Handles CRUD operations for Task model with proper user authorization.
+Task service for business logic related to task management.
+Handles validation, business rules, and orchestrates task operations.
 """
-from typing import List, Optional
-from sqlmodel import Session, select
-from fastapi import HTTPException
-from ..models.task import Task, TaskCreate, TaskUpdate, TaskStatus
-from ..models.user import User
+from typing import Dict, Any, List, Optional
 from datetime import datetime
+from ..models.task import Task, TaskStatus, TaskPriority
+from .task_repository import TaskRepository
 
 
 class TaskService:
     """
-    Service class for handling task-related operations.
-    Implements CRUD operations with proper user authorization.
+    Service class for Task business operations
     """
 
-    @staticmethod
-    def create_task(session: Session, task_create: TaskCreate, user: User) -> Task:
+    def __init__(self, task_repository: TaskRepository):
+        self.task_repository = task_repository
+
+    async def create_task(self, task_data: Dict[str, Any]) -> Task:
         """
-        Create a new task for the authenticated user.
-        Verifies that the task is being created for the correct user.
+        Create a new task after validating the input data.
         """
-        # Verify that the user_id in the request matches the authenticated user
-        if task_create.user_id != user.id:
-            raise HTTPException(
-                status_code=403,
-                detail="Not authorized to create task for this user"
-            )
+        # Validate input data
+        await self._validate_task_data(task_data)
 
-        # Create the task instance
-        task = Task.from_orm(task_create) if hasattr(Task, 'from_orm') else Task(**task_create.dict())
-        task.user_id = user.id
+        # Set default values if not provided
+        if 'status' not in task_data or task_data['status'] is None:
+            task_data['status'] = TaskStatus.PENDING.value
+        if 'priority' not in task_data or task_data['priority'] is None:
+            task_data['priority'] = TaskPriority.MEDIUM.value
+        if 'created_at' not in task_data or task_data['created_at'] is None:
+            task_data['created_at'] = datetime.utcnow()
+        if 'updated_at' not in task_data or task_data['updated_at'] is None:
+            task_data['updated_at'] = datetime.utcnow()
 
-        # Add to session and commit
-        session.add(task)
-        session.commit()
-        session.refresh(task)
+        # Validate due date if provided
+        if 'due_date' in task_data and task_data['due_date']:
+            if isinstance(task_data['due_date'], str):
+                from datetime import datetime
+                task_data['due_date'] = datetime.fromisoformat(task_data['due_date'])
+            if task_data['due_date'] < datetime.utcnow() and task_data['status'] == TaskStatus.PENDING.value:
+                raise ValueError("Due date cannot be in the past when status is pending")
 
-        return task
+        # Create the task
+        return await self.task_repository.create_task(task_data)
 
-    @staticmethod
-    def get_task_by_id(session: Session, task_id: int, user: User) -> Optional[Task]:
+    async def get_task_by_id(self, task_id: str, user_id: str) -> Optional[Task]:
         """
-        Retrieve a task by its ID for the authenticated user.
-        Returns None if the task doesn't exist or doesn't belong to the user.
+        Retrieve a task by its ID, ensuring it belongs to the specified user.
         """
-        # Query for the task belonging to the user
-        statement = select(Task).where(Task.id == task_id, Task.user_id == user.id)
-        task = session.exec(statement).first()
-        return task
+        task = await self.task_repository.get_task_by_id(task_id)
+        if task and task.user_id == user_id:
+            return task
+        return None
 
-    @staticmethod
-    def get_tasks_by_user(
-        session: Session,
-        user: User,
-        status: Optional[TaskStatus] = None,
-        priority: Optional[str] = None,
-        limit: int = 100,
-        offset: int = 0
-    ) -> List[Task]:
+    async def get_tasks_for_user(self, user_id: str, status: Optional[str] = None,
+                                 limit: int = 20, offset: int = 0) -> List[Task]:
         """
-        Retrieve all tasks for the authenticated user with optional filtering.
+        Retrieve tasks for a specific user, optionally filtered by status.
         """
-        # Start with a base query for tasks belonging to the user
-        statement = select(Task).where(Task.user_id == user.id)
+        task_status = TaskStatus(status) if status else None
+        return await self.task_repository.get_tasks_by_user(user_id, task_status, limit, offset)
 
-        # Apply filters if provided
-        if status:
-            statement = statement.where(Task.status == status)
-        if priority:
-            statement = statement.where(Task.priority == priority)
-
-        # Apply pagination
-        statement = statement.offset(offset).limit(limit)
-
-        # Execute query
-        tasks = session.exec(statement).all()
-        return tasks
-
-    @staticmethod
-    def update_task(session: Session, task_id: int, task_update: TaskUpdate, user: User) -> Optional[Task]:
+    async def update_task(self, task_id: str, user_id: str, update_data: Dict[str, Any]) -> Optional[Task]:
         """
-        Update a task for the authenticated user.
-        Returns the updated task or None if the task doesn't exist or doesn't belong to the user.
+        Update a task after validating the user has permission and the data is valid.
         """
-        # Get the existing task
-        task = TaskService.get_task_by_id(session, task_id, user)
-        if not task:
+        # Get the existing task to verify user ownership
+        existing_task = await self.task_repository.get_task_by_id(task_id)
+        if not existing_task or existing_task.user_id != user_id:
             return None
 
-        # Update the task with the provided fields
-        update_data = task_update.dict(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(task, field, value)
+        # Validate update data
+        await self._validate_task_data(update_data, for_update=True)
 
-        # Update the timestamp
-        task.updated_at = datetime.utcnow()
+        # Update timestamps
+        update_data['updated_at'] = datetime.utcnow()
 
-        # Commit changes
-        session.add(task)
-        session.commit()
-        session.refresh(task)
+        # Validate due date if being updated
+        if 'due_date' in update_data and update_data['due_date']:
+            if isinstance(update_data['due_date'], str):
+                from datetime import datetime
+                update_data['due_date'] = datetime.fromisoformat(update_data['due_date'])
+            if update_data['due_date'] < datetime.utcnow() and existing_task.status == TaskStatus.PENDING:
+                raise ValueError("Due date cannot be in the past when status is pending")
 
-        return task
+        # Perform the update
+        return await self.task_repository.update_task(task_id, update_data)
 
-    @staticmethod
-    def delete_task(session: Session, task_id: int, user: User) -> bool:
+    async def delete_task(self, task_id: str, user_id: str) -> bool:
         """
-        Delete a task for the authenticated user.
-        Returns True if the task was deleted, False if it didn't exist or didn't belong to the user.
+        Delete a task after verifying user ownership.
         """
-        # Get the task to delete
-        task = TaskService.get_task_by_id(session, task_id, user)
-        if not task:
+        # Verify user ownership
+        task = await self.task_repository.get_task_by_id(task_id)
+        if not task or task.user_id != user_id:
             return False
 
-        # Delete the task
-        session.delete(task)
-        session.commit()
+        return await self.task_repository.delete_task(task_id)
 
-        return True
-
-    @staticmethod
-    def mark_task_completed(session: Session, task_id: int, user: User) -> Optional[Task]:
+    async def complete_task(self, task_id: str, user_id: str) -> Optional[Task]:
         """
-        Mark a task as completed for the authenticated user.
-        Returns the updated task or None if the task doesn't exist or doesn't belong to the user.
+        Mark a task as completed after verifying user ownership.
         """
-        # Get the task to update
-        task = TaskService.get_task_by_id(session, task_id, user)
-        if not task:
+        # Verify user ownership
+        task = await self.task_repository.get_task_by_id(task_id)
+        if not task or task.user_id != user_id:
             return None
 
-        # Mark as completed
-        task.mark_completed()
+        # Update the task status to completed
+        return await self.task_repository.complete_task(task_id)
 
-        # Commit changes
-        session.add(task)
-        session.commit()
-        session.refresh(task)
-
-        return task
-
-    @staticmethod
-    def get_pending_tasks_count(session: Session, user: User) -> int:
+    async def assign_task(self, task_id: str, user_id: str, assigned_user_id: str) -> Optional[Task]:
         """
-        Get the count of pending tasks for the authenticated user.
+        Assign a task to another user after verifying original user ownership.
         """
-        statement = select(Task).where(
-            Task.user_id == user.id,
-            Task.status == TaskStatus.PENDING
-        )
-        tasks = session.exec(statement).all()
-        return len(tasks)
+        # Verify user ownership
+        task = await self.task_repository.get_task_by_id(task_id)
+        if not task or task.user_id != user_id:
+            return None
 
+        # Perform the assignment
+        return await self.task_repository.assign_task(task_id, assigned_user_id)
 
-# Create a singleton instance of the service
-task_service = TaskService()
+    async def _validate_task_data(self, task_data: Dict[str, Any], for_update: bool = False) -> None:
+        """
+        Validate task data based on business rules.
+        """
+        if not for_update or 'title' in task_data:
+            if 'title' not in task_data or not task_data['title'] or len(task_data['title']) > 255:
+                raise ValueError("Title is required and must be 1-255 characters long")
+
+        if 'status' in task_data and task_data['status']:
+            try:
+                TaskStatus(task_data['status'])
+            except ValueError:
+                raise ValueError(f"Invalid status: {task_data['status']}")
+
+        if 'priority' in task_data and task_data['priority']:
+            try:
+                TaskPriority(task_data['priority'])
+            except ValueError:
+                raise ValueError(f"Invalid priority: {task_data['priority']}")
+
+        if 'due_date' in task_data and task_data['due_date']:
+            # Already validated when parsing date in create/update methods
+            pass
+
+        if 'user_id' in task_data and not task_data['user_id']:
+            raise ValueError("user_id is required")
+
+    def _validate_task_transition(self, current_status: TaskStatus, new_status: TaskStatus) -> bool:
+        """
+        Validate state transitions based on business rules:
+        - pending → in-progress → completed
+        - completed → pending (only through explicit user action)
+        - pending → cancelled (through explicit user action)
+        """
+        valid_transitions = {
+            TaskStatus.PENDING: [TaskStatus.IN_PROGRESS, TaskStatus.PENDING],
+            TaskStatus.IN_PROGRESS: [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS],
+            TaskStatus.COMPLETED: [TaskStatus.PENDING, TaskStatus.COMPLETED],
+        }
+
+        return new_status in valid_transitions.get(current_status, [current_status])
+
+    async def update_task_status(self, task_id: str, user_id: str, new_status: str) -> Optional[Task]:
+        """
+        Update task status with transition validation.
+        """
+        task = await self.task_repository.get_task_by_id(task_id)
+        if not task or task.user_id != user_id:
+            return None
+
+        # Validate status transition
+        new_status_enum = TaskStatus(new_status)
+        if not self._validate_task_transition(task.status, new_status_enum):
+            raise ValueError(f"Invalid status transition: {task.status.value} -> {new_status}")
+
+        # Update status
+        update_data = {
+            'status': new_status_enum.value,
+            'updated_at': datetime.utcnow()
+        }
+
+        return await self.task_repository.update_task(task_id, update_data)

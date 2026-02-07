@@ -1,23 +1,50 @@
 apiVersion: v2
 name: todo-chatbot
-description: A Helm chart for deploying the Todo Chatbot application on Kubernetes
-
-# A chart can be either an 'application' or a 'library' chart.
-#
-# Application charts are a collection of templates that can be packaged into versioned archives
-# to be deployed.
-#
-# Library charts provide useful utilities or functions for the chart developer. They're included as
-# a dependency of application charts to inject those utilities and functions into the rendering
-# pipeline. Library charts do not define any templates and therefore cannot be deployed.
+description: A Helm chart for the cloud-native todo chatbot system
 type: application
-
-# This is the chart version. This version number should be incremented each time you make changes
-# to the chart and its templates, including the app version.
-# Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.1.0
-
-# This is the version number of the application being deployed. This version number should be
-# incremented each time you make changes to the application. Versions are not expected to
-# follow Semantic Versioning. They should reflect the version the application is using.
+version: 1.0.0
 appVersion: "1.0.0"
+maintainers:
+  - name: Todo Chatbot Team
+    email: team@todo-chatbot.example.com
+    url: https://todo-chatbot.example.com
+
+home: https://todo-chatbot.example.com
+sources:
+  - https://github.com/todo-chatbot/todo-chatbot
+
+dependencies:
+  - name: kafka
+    version: "2.0.1"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: kafka.enabled
+  - name: postgresql
+    version: "12.1.2"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: redis
+    version: "17.9.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+  - name: dapr
+    version: "1.9.0"
+    repository: "https://dapr.github.io/helm-charts"
+    condition: dapr.enabled
+
+icon: https://todo-chatbot.example.com/icon.png
+
+keywords:
+  - todo
+  - chatbot
+  - microservices
+  - event-driven
+  - cloud-native
+
+annotations:
+  artifacthub.io/license: MIT
+  artifacthub.io/operator: false
+  artifacthub.io/links: |
+    - name: GitHub
+      url: https://github.com/todo-chatbot/todo-chatbot
+    - name: Documentation
+      url: https://docs.todo-chatbot.example.com

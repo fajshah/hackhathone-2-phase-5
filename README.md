@@ -1,6 +1,6 @@
-# Todo AI Chatbot - Phase III Implementation
+# Skills Implementation Framework & Todo AI Chatbot
 
-This project implements a sophisticated AI-powered todo list management system using modern agentic architecture patterns.
+This project combines a comprehensive skills implementation framework with a sophisticated AI-powered todo list management system using modern agentic architecture patterns.
 
 ## 🚀 Features Implemented
 
@@ -94,6 +94,39 @@ This project implements a sophisticated AI-powered todo list management system u
 - **Modern UI/UX** with responsive design principles
 
 This implementation represents a complete, production-ready AI-powered todo management system that follows modern agentic architecture patterns.
+
+## Skills Implementation Framework
+
+This project also includes a comprehensive Skills Implementation Framework with the following capabilities:
+
+### Available Skills
+
+| Skill | Description |
+|-------|-------------|
+| `sp.implement` | Execute the implementation plan by processing and executing all tasks defined in tasks.md |
+| `sp.taskstoissues` | Convert existing tasks into actionable, dependency-ordered GitHub issues |
+| `sp.git.commit_pr` | Intelligent Git workflow: commit work and create PR |
+| `sp.tasks` | Generate actionable, dependency-ordered tasks.md |
+| `sp.constitution` | Create or update project constitution from principles |
+| `sp.clarify` | Identify underspecified areas and ask clarification questions |
+| `sp.specify` | Create or update feature specification from natural language |
+| `sp.checklist` | Generate custom checklist based on requirements |
+| `sp.reverse-engineer` | Reverse engineer codebase into SDD-RI artifacts |
+| `sp.analyze` | Analyze consistency and quality across spec, plan, and tasks |
+| `sp.plan` | Execute implementation planning workflow |
+| `sp.adr` | Create Architectural Decision Records |
+| `sp.phr` | Create Prompt History Records |
+
+### Usage
+
+To run the skills demonstration:
+
+```bash
+npm install
+npm run demo
+```
+
+The framework will generate various project artifacts including specifications, plans, tasks, constitutions, and more.
 
 ## Additional Notes
 

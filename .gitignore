@@ -1,48 +1,59 @@
-# Dependencies
-node_modules/
-backend/__pycache__/
-backend/src/__pycache__/
-backend/src/**/*.pyc
-frontend/node_modules/
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Next.js
-.next/
-out/
-
-# Backend
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
-env/
-venv/
-ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.coverage
+.cache
+.pytest_cache/
+htmlcov/
 .venv/
-env.bak/
-venv.bak/
+venv/
+env/
+.ENV
 
-# Build outputs
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 dist/
 build/
 coverage/
-*.egg-info/
+.nyc_output
+.next
+.nuxt
+.vercel
+.svelte-kit
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+# Docker
+.docker/
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Kubernetes
+*.secret.yaml
+secrets/
+.kube/
+kubeconfig*
 
 # IDE
 .vscode/
@@ -50,31 +61,28 @@ Thumbs.db
 *.swp
 *.swo
 *~
+.DS_Store
+Thumbs.db
+
+# Environment
+.env*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
 
-# Database
-*.db
-*.db-journal
-
-# System files
-nul
-
-# Backend build artifacts
-backend-agentic/.pytest_cache/
-backend-agentic/__pycache__/
-backend-agentic/*.pyc
-
-# Frontend build artifacts
-frontend/dist/
-frontend/.vite/
-frontend/.next/
-frontend/build/
-
-# Lock files
-package-lock.json
-yarn.lock
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+iTunes Music Store

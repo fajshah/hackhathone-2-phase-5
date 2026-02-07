@@ -1,0 +1,128 @@
+# Docker Compose file for local testing of cloud-like environment
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: todo_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for Dapr state store and pub/sub
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Zookeeper for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT:kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka Topics Setup
+  kafka-setup:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - kafka
+    command: >
+      bash -c "
+        sleep 10 &&
+        kafka-topics --create --topic task-events --bootstrap-server kafka:9092 --partitions 3 --replication-factor 1 &&
+        kafka-topics --create --topic reminders --bootstrap-server kafka:9092 --partitions 3 --replication-factor 1 &&
+        kafka-topics --create --topic task-updates --bootstrap-server kafka:9092 --partitions 3 --replication-factor 1 &&
+        echo 'Kafka topics created successfully'
+      "
+
+  # Backend Application with Dapr Sidecar
+  backend:
+    build:
+      context: ./Phase4/backend
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+      - redis
+      - kafka-setup
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/todo_db
+      - REDIS_HOST=redis
+      - KAFKA_BROKERS=kafka:9092
+      - BETTER_AUTH_SECRET=supersecretkeyforauthenticationthatshouldbe32charactersormore
+      - DEBUG=true
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./Phase4/backend:/app
+    command: >
+      bash -c "
+        # Wait for dependencies to be ready
+        sleep 15 &&
+        python -m pip install -e . &&
+        python -c 'from backend.src.database import init_db; init_db()' &&
+        uvicorn backend.src.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  # Frontend Application
+  frontend:
+    build:
+      context: ./Phase4/frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./Phase4/frontend:/app
+      - /app/node_modules
+    stdin_open: true
+    tty: true
+
+volumes:
+  postgres_data:
+  redis_data:

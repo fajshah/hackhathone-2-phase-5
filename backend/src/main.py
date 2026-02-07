@@ -1,27 +1,48 @@
 """
-Main entry point for the Todo AI Chatbot backend application.
-Sets up the FastAPI application with all necessary middleware and routes.
+Main FastAPI application for the todo chatbot system.
 """
-from fastapi import FastAPI
+import os
+import logging
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from .middleware.logging import LoggingMiddleware
-from .middleware.error_handler import setup_error_handlers
+from sqlalchemy.ext.asyncio import AsyncSession
+from .database import init_db, close_db, get_async_session
+from .services.task_repository import TaskRepository
+from .services.task_service import TaskService
 
-# Import MCP tools to ensure they get registered with the server
-from .mcp import mcp_server
 
-# Import routers
-from .api.chat import router as chat_router
-from .api.auth import router as auth_router
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Create FastAPI app instance
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan event handler for application startup and shutdown.
+    """
+    logger.info("Initializing database...")
+    await init_db()
+    logger.info("Database initialized successfully")
+
+    yield  # This is where the application runs
+
+    logger.info("Closing database connection...")
+    await close_db()
+    logger.info("Database connection closed")
+
+
+# Create FastAPI app with lifespan
 app = FastAPI(
-    title="Todo AI Chatbot API",
+    title="Todo Chatbot API",
+    description="API for managing tasks in the cloud-native todo chatbot system",
     version="1.0.0",
-    description="AI-powered chatbot for managing todos through natural language"
+    lifespan=lifespan
 )
 
-# Add CORS middleware for cross-origin requests
+
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In production, replace with specific origins
@@ -30,26 +51,59 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add custom logging middleware
-app.add_middleware(LoggingMiddleware)
 
-# Setup error handlers
-setup_error_handlers(app)
+# Import routers after app creation to avoid circular imports
+from .api.health_routes import router as health_router
+from .api.task_routes import router as task_router
+from .api.chat_routes import router as chat_router
+from .api.reminder_routes import router as reminder_router
+
 
 # Include routers
+app.include_router(health_router, prefix="/api/v1", tags=["health"])
+app.include_router(task_router, prefix="/api/v1", tags=["tasks"])
 app.include_router(chat_router, prefix="/api/v1", tags=["chat"])
-app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
+app.include_router(reminder_router, prefix="/api/v1", tags=["reminders"])
+
 
 @app.get("/")
-def read_root():
-    return {"message": "Todo AI Chatbot API is running", "status": "ok"}
+async def root():
+    """
+    Root endpoint for the API.
+    """
+    return {"message": "Welcome to the Todo Chatbot API!"}
 
+
+from .services.task_repository import TaskRepository
+from .services.task_service import TaskService
+from sqlalchemy.ext.asyncio import AsyncSession
+from .database import get_async_session
+
+
+# Dependency to get task service
+async def get_task_service(db_session: AsyncSession = Depends(get_async_session)) -> TaskService:
+    """
+    Get an instance of TaskService with a repository using the provided database session.
+    """
+    task_repo = TaskRepository(db_session)
+    task_service = TaskService(task_repo)
+    return task_service
+
+
+# Health check endpoint
 @app.get("/health")
-def health_check():
-    return {"status": "healthy", "service": "Todo AI Chatbot API"}
+async def health_check():
+    """
+    Health check endpoint to verify the API is running.
+    """
+    return {"status": "healthy", "timestamp": "2026-02-05T10:00:00Z"}
 
-# Initialize database when app starts
-from .database import init_db
-@app.on_event("startup")
-def startup_event():
-    init_db()
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=os.getenv("HOST", "0.0.0.0"),
+        port=int(os.getenv("PORT", 8000)),
+        reload=True  # Turn off in production
+    )

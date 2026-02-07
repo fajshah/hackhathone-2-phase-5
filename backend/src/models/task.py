@@ -1,101 +1,38 @@
-"""
-Task model for the Todo AI Chatbot.
-Represents a todo item that belongs to a user.
-"""
-from sqlmodel import SQLModel, Field, Relationship
-from typing import TYPE_CHECKING, Optional
-from datetime import datetime
 import uuid
+from datetime import datetime
+from typing import Optional, List
+from sqlmodel import SQLModel, Field
+from sqlalchemy import Column, DateTime, String, JSON
 from enum import Enum
 
-if TYPE_CHECKING:
-    from .user import User
 
-# Define task priority enum
+class TaskStatus(str, Enum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    IN_PROGRESS = "in-progress"
+
+
 class TaskPriority(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
-    URGENT = "urgent"
+    CRITICAL = "critical"
 
-# Define task status enum
-class TaskStatus(str, Enum):
-    PENDING = "pending"
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
 
-# Define the Task model
-class TaskBase(SQLModel):
+class Task(SQLModel, table=True):
     """
-    Base class for Task model with common fields.
-    """
-    title: str = Field(nullable=False, max_length=255)
-    description: Optional[str] = Field(default=None, max_length=1000)
-    priority: TaskPriority = Field(default=TaskPriority.MEDIUM)
-    status: TaskStatus = Field(default=TaskStatus.PENDING)
-    completed: bool = Field(default=False)
-    due_date: Optional[datetime] = Field(default=None)
-
-
-class Task(TaskBase, table=True):
-    """
-    Task model representing a todo item that belongs to a user.
+    Represents a user's to-do item with associated metadata and status
     """
     __tablename__ = "tasks"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    uuid: str = Field(default_factory=lambda: str(uuid.uuid4()), unique=True, nullable=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-    completed_at: Optional[datetime] = Field(default=None)
-
-    # Foreign key to User
-    user_id: int = Field(foreign_key="users.id", nullable=False)
-
-    # Relationship
-    user: "User" = Relationship(back_populates="tasks")
-
-    def __repr__(self):
-        return f"<Task(id={self.id}, title='{self.title}', user_id={self.user_id})>"
-
-    def mark_completed(self):
-        """
-        Mark the task as completed and set the completed_at timestamp.
-        """
-        self.completed = True
-        self.status = TaskStatus.COMPLETED
-        self.completed_at = datetime.utcnow()
-        self.updated_at = datetime.utcnow()
-
-
-class TaskCreate(TaskBase):
-    """
-    Schema for creating a new task.
-    """
-    title: str
-    user_id: int  # Required when creating a task
-
-
-class TaskUpdate(SQLModel):
-    """
-    Schema for updating task information.
-    """
-    title: Optional[str] = None
-    description: Optional[str] = None
-    priority: Optional[TaskPriority] = None
-    status: Optional[TaskStatus] = None
-    completed: Optional[bool] = None
-    due_date: Optional[datetime] = None
-
-
-class TaskPublic(TaskBase):
-    """
-    Public representation of a task.
-    """
-    id: int
-    uuid: str
-    user_id: int
-    created_at: datetime
-    updated_at: datetime
-    completed_at: Optional[datetime]
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True, description="Unique identifier for the task")
+    title: str = Field(min_length=1, max_length=255, description="Task title/description")
+    description: Optional[str] = Field(None, description="Optional detailed description")
+    status: TaskStatus = Field(default=TaskStatus.PENDING, description="Current status of the task")
+    priority: TaskPriority = Field(default=TaskPriority.MEDIUM, description="Priority level of the task")
+    due_date: Optional[datetime] = Field(None, sa_column=Column(DateTime, nullable=True), description="Optional deadline for task completion")
+    created_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime, nullable=False), description="Timestamp of creation")
+    updated_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime, nullable=False), description="Timestamp of last update")
+    user_id: str = Field(description="Reference to user who owns the task")
+    assigned_to: Optional[str] = Field(None, description="Reference to user assigned to task (optional)")
+    tags: List[str] = Field(default=[], sa_column=Column(JSON, nullable=False), description="Array of string tags for categorization")

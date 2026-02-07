@@ -1,71 +1,66 @@
 """
-Database setup module for the Todo AI Chatbot.
-Handles database connections and session management using SQLModel.
+Database connection and session management for the todo chatbot system.
+Uses NeonDB (PostgreSQL-compatible) for persistent storage.
 """
-from sqlmodel import create_engine, Session
-from sqlalchemy import event
-from sqlalchemy.engine import Engine
-import sqlite3
-import logging
+import os
+from typing import AsyncGenerator
+from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+from contextlib import asynccontextmanager
 
-# Import settings
-from .config import settings
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Database configuration from environment variables
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "sqlite+aiosqlite:///./todo_chatbot_local.db"  # Changed to SQLite for local development
+)
 
-# Create the database engine
-# Using PostgreSQL for production, SQLite for development/testing
-if settings.DATABASE_URL.startswith("postgresql"):
-    # Production PostgreSQL setup
-    engine = create_engine(
-        settings.DATABASE_URL,
-        echo=settings.DEBUG,  # Log SQL queries in debug mode
-        pool_pre_ping=True,   # Verify connections before use
-        pool_recycle=300,     # Recycle connections every 5 minutes
-    )
-else:
-    # Development SQLite setup
-    engine = create_engine(
-        settings.DATABASE_URL,
-        echo=settings.DEBUG,
-        connect_args={"check_same_thread": False}  # Required for SQLite
-    )
 
-def get_session():
+# Create async engine
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=False,  # Set to False in production
+    pool_pre_ping=True,
+)
+
+
+# Create async session maker
+async_session_maker = sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False
+)
+
+
+async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     """
-    Generator function to provide database sessions.
-    Ensures proper cleanup after each session.
+    Get async database session as a generator for dependency injection.
     """
-    with Session(engine) as session:
+    async with async_session_maker() as session:
         yield session
 
-# Optional: Add event listener to log SQL queries in development
-if settings.DEBUG:
-    @event.listens_for(Engine, "before_cursor_execute")
-    def receive_before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
-        logger.debug(f"Executing SQL: {statement}")
-        if parameters:
-            logger.debug(f"With parameters: {parameters}")
 
-def init_db():
+async def init_db():
     """
-    Initialize the database by creating all tables.
-    This should be called when starting the application.
+    Initialize database connection and create tables if they don't exist.
     """
-    from .models.user import User
     from .models.task import Task
-    from .models.conversation import Conversation
-    from .models.message import Message
+    from .models.reminder import Reminder
+    from .models.session import UserSession
+    from .models.event_log import EventLog
 
-    # Create all tables defined in the models
-    from sqlmodel import SQLModel
-    SQLModel.metadata.create_all(engine)
-    logger.info("Database tables created successfully")
+    # Import the models to register them with SQLAlchemy
+    # This will allow the tables to be created
 
-# Initialize the database when this module is imported (only in main app context)
-# Skip initialization during testing to avoid database connection issues
-import os
-if os.getenv("TESTING") != "1":
-    init_db()
+    async with engine.begin() as conn:
+        # Create tables (this would typically be handled by Alembic migrations in production)
+        # For now, we'll create them directly
+        await conn.run_sync(Task.metadata.create_all)
+
+
+async def close_db():
+    """
+    Close the database engine.
+    """
+    await engine.dispose()

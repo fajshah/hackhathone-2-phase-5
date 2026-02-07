@@ -1,11 +1,29 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "todo-chatbot.fullname" . }}-app-config
+  name: {{ include "todo-chatbot.fullname" . }}-config
   labels:
     {{- include "todo-chatbot.labels" . | nindent 4 }}
 data:
-  FRONTEND_URL: {{ .Values.config.frontendUrl | quote }}
-  BACKEND_URL: {{ .Values.config.backendUrl | quote }}
-  DATABASE_HOST: {{ printf "%s-database" (include "todo-chatbot.fullname" .) | quote }}
-  DATABASE_PORT: {{ .Values.database.service.port | quote }}
+  # Application configuration
+  DATABASE_HOST: {{ .Values.database.host | quote }}
+  DATABASE_PORT: {{ .Values.database.port | quote }}
+  DATABASE_NAME: {{ .Values.database.name | quote }}
+  KAFKA_HOST: {{ .Values.kafka.host | quote }}
+  KAFKA_PORT: {{ .Values.kafka.port | quote }}
+  REDIS_HOST: {{ .Values.redis.host | quote }}
+  REDIS_PORT: {{ .Values.redis.port | quote }}
+  LOG_LEVEL: {{ .Values.logLevel | quote }}
+  ENVIRONMENT: {{ .Values.environment | quote }}
+
+  # Dapr configuration
+  DAPR_HTTP_PORT: {{ .Values.dapr.httpPort | quote }}
+  DAPR_GRPC_PORT: {{ .Values.dapr.grpcPort | quote }}
+
+  # Service configuration
+  BACKEND_PORT: {{ .Values.backend.service.port | quote }}
+  FRONTEND_PORT: {{ .Values.frontend.service.port | quote }}
+
+  # Health check configuration
+  HEALTH_CHECK_INTERVAL: {{ .Values.healthCheck.interval | quote }}
+  READINESS_CHECK_TIMEOUT: {{ .Values.healthCheck.readinessTimeout | quote }}

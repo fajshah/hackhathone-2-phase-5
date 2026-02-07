@@ -1,113 +1,153 @@
-# Default values for todo-chatbot
+# Default values for todo-chatbot.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# Global settings
+# Application environment
+environment: production
+
+# Logging configuration
+logLevel: info
+
+# Global configuration
 global:
   imageRegistry: ""
   imagePullSecrets: []
   storageClass: ""
 
-# Frontend configuration
-frontend:
-  replicaCount: 1
+# Backend service configuration
+backend:
+  replicaCount: 3
   image:
-    repository: todo-frontend
+    repository: todo-chatbot/backend
     pullPolicy: IfNotPresent
-    # Overrides the image tag whose default is the chart appVersion.
     tag: ""
+  imagePullSecrets: []
   service:
-    type: NodePort
-    port: 80
-  ingress:
-    enabled: false
-    className: ""
-    annotations: {}
-    hosts:
-      - host: chart-example.local
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    tls: []
+    type: ClusterIP
+    port: 8000
   resources:
-    # We usually recommend not to specify default resources and to leave this as a conscious
-    # choice for the user. This also increases chances charts run on environments with little
-    # resources, such as Minikube. If you do want to specify resources, uncomment the following
-    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Frontend service configuration
+frontend:
+  replicaCount: 2
+  image:
+    repository: todo-chatbot/frontend
+    pullPolicy: IfNotPresent
+    tag: ""
+  imagePullSecrets: []
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
     limits:
       cpu: 200m
       memory: 256Mi
     requests:
       cpu: 100m
       memory: 128Mi
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 100
-    targetCPUUtilizationPercentage: 80
-    # targetMemoryUtilizationPercentage: 80
   nodeSelector: {}
   tolerations: []
   affinity: {}
 
-# Backend configuration
-backend:
-  replicaCount: 1
+# Event Processor service configuration
+eventProcessor:
+  replicaCount: 2
   image:
-    repository: todo-backend
+    repository: todo-chatbot/event-processor
     pullPolicy: IfNotPresent
-    # Overrides the image tag whose default is the chart appVersion.
     tag: ""
-  service:
-    type: ClusterIP
-    port: 8000
+  imagePullSecrets: []
   resources:
     limits:
       cpu: 300m
-      memory: 512Mi
+      memory: 256Mi
     requests:
       cpu: 150m
-      memory: 256Mi
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 100
-    targetCPUUtilizationPercentage: 80
-    # targetMemoryUtilizationPercentage: 80
+      memory: 128Mi
   nodeSelector: {}
   tolerations: []
   affinity: {}
 
 # Database configuration
 database:
+  host: postgresql
+  port: 5432
+  name: todo_chatbot
+  username: postgres
+  password: "changeme"
+  url: "postgresql://postgres:changeme@postgresql:5432/todo_chatbot"
+
+# Kafka configuration
+kafka:
   enabled: true
-  image:
-    repository: postgres
-    tag: "13"
-  service:
-    port: 5432
-  resources:
-    limits:
-      cpu: 500m
-      memory: 512Mi
-    requests:
-      cpu: 200m
-      memory: 256Mi
-  persistence:
-    enabled: true
-    size: 1Gi
-    storageClass: ""
-  secrets:
-    # These will be base64 encoded in the Kubernetes secret
-    postgresPassword: "cG9zdGdyZXM="  # "postgres" in base64
-    postgresDb: "dG9kb19kYg=="         # "todo_db" in base64
-    postgresUser: "cG9zdGdyZXM="      # "postgres" in base64
+  host: kafka
+  port: 9092
+  bootstrapServers: "kafka:9092"
 
-# Configuration for application
-config:
-  openaiApiKey: ""
-  backendUrl: "http://todo-backend-service:8000"
-  frontendUrl: "http://todo-frontend-service"
+# Redis configuration
+redis:
+  enabled: true
+  host: redis-master
+  port: 6379
 
-# Labels to be applied to all resources
-commonLabels: {}
+# Dapr configuration
+dapr:
+  enabled: true
+  logLevel: info
+  httpPort: 3500
+  grpcPort: 50001
+
+# Health check configuration
+healthCheck:
+  interval: 30s
+  readinessTimeout: 5s
+
+# Pod Security Context
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Node selectors, tolerations, and affinity
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Application secrets (these should be overridden in production)
+app:
+  jwtSecret: "change-this-to-a-secure-jwt-secret"
+  encryptionKey: "change-this-to-a-secure-encryption-key"
+
+# Ingress configuration (if needed)
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local

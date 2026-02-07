@@ -1,0 +1,78 @@
+# Dapr components configuration for Todo AI Chatbot
+---
+# State Store component (PostgreSQL)
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: todo-statestore
+spec:
+  type: state.postgresql
+  version: v1
+  metadata:
+  - name: connectionString
+    value: "host=postgres user=postgres password=password dbname=todo_db port=5432 sslmode=disable"
+  - name: actorStateStore
+    value: "true"
+---
+# Secret Store component
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: todo-secret-store
+spec:
+  type: secretstores.kubernetes
+  version: v1
+  metadata: []
+---
+# Pub/Sub component (Redis Streams - alternative to Kafka for simpler setup)
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: todo-pubsub
+spec:
+  type: pubsub.redis
+  version: v1
+  metadata:
+  - name: redisHost
+    value: "redis-master.redis.svc.cluster.local:6379"
+  - name: redisPassword
+    valueFrom:
+      secretKeyRef:
+        name: redis-secret
+        key: password
+---
+# Alternative: Kafka Pub/Sub component
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: todo-kafka-pubsub
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  - name: brokers
+    value: "kafka.kafka.svc.cluster.local:9092"
+  - name: consumerGroup
+    value: "todo-consumer-group"
+  - name: disableTls
+    value: "true"
+  - name: authRequired
+    value: "false"
+---
+# Configuration for the application
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: app-config
+spec:
+  tracing:
+    samplingRate: "1"
+    zipkin:
+      endpointAddress: "http://zipkin.default.svc.cluster.local:9411/api/v2/spans"
+  metric:
+    enabled: true
+  httpPipeline:
+    handlers: []
+  accessControl:
+    defaultAction: allow
+    trustDomain: "todo-domain"
